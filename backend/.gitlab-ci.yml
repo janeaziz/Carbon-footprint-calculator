@@ -1,0 +1,96 @@
+stages:
+  - sonarqube-check
+  - sonarqube-vulnerability-report
+  - build
+  - deploy
+
+variables:
+  VM_IP: "192.168.75.53"
+  DEPLOY_PATH: "/var/www/backendco2"
+  GIT_DEPTH: "0"
+  SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
+
+
+before_script:
+  - chmod +x setup-mvn-proxy.sh
+  - ./setup-mvn-proxy.sh
+
+# --------------------- 
+# 🔍 SonarQube Scan
+# ---------------------
+sonarqube-check:
+  stage: sonarqube-check
+  image: maven:3-eclipse-temurin-21
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+      - .m2/repository
+  script:
+    - mvn clean verify sonar:sonar -Dspring.profiles.active=ci -Dsonar.projectKey=mif10_grp10_2024_backendco2 -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_TOKEN -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+
+  allow_failure: true
+  only:
+    - merge_requests
+    - master
+    - main
+    - develop
+
+# --------------------- 
+# 🧪 SAST Report
+# ---------------------
+sonarqube-vulnerability-report:
+  stage: sonarqube-vulnerability-report
+  image: node:20-alpine
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - >
+      curl -u "${SONAR_TOKEN}:" 
+      "${SONAR_HOST_URL}/api/issues/gitlab_sast_export?projectKey=mif10_grp10_2024_backendco2&branch=${CI_COMMIT_BRANCH}&pullRequest=${CI_MERGE_REQUEST_IID}" 
+      -o gl-sast-sonar-report.json
+  allow_failure: true
+  only:
+    - merge_requests
+    - master
+    - main
+    - develop
+  artifacts:
+    expire_in: 1 day
+    reports:
+      sast: gl-sast-sonar-report.json
+  dependencies:
+    - sonarqube-check
+
+# --------------------- 
+# 🛠 Build the .war file
+# ---------------------
+build-backend:
+  stage: build
+  image: maven:3-eclipse-temurin-21
+  script:
+    - mvn clean package
+  artifacts:
+    paths:
+      - target/*.war
+    expire_in: 1 day
+  only:
+    - main
+
+# --------------------- 
+# 🚀 Deploy Backend to VM
+# ---------------------
+deploy-backend:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh-client rsync
+    - chmod 400 $CI_SSH_KEY
+    - mkdir -p ~/.ssh
+    - ssh-keyscan $VM_IP >> ~/.ssh/known_hosts
+  script:
+    - rsync -avz --delete -e "ssh -i $CI_SSH_KEY" target/*.war gitlabci@$VM_IP:$DEPLOY_PATH
+    - ssh -i $CI_SSH_KEY gitlabci@$VM_IP "sudo systemctl restart co2"
+  only:
+    - main
+

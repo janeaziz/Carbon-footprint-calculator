@@ -1,0 +1,169 @@
+{
+  "info": {
+    "name": "CO2 User Auth Flow",
+    "_postman_id": "co2-auth-flow-2025",
+    "description": "Automated test flow: signup > login > promote > delete",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// ✅ Generate unique test email before any requests",
+          "if (!pm.environment.get(\"email\")) {",
+          "    const random = Math.floor(Math.random() * 100000);",
+          "    const email = `testuser_${random}@co2.com`;",
+          "    pm.environment.set(\"email\", email);",
+          "    console.log(\"Generated email:\", email);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Signup random user",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": { "raw": "http://localhost:8080/auth/signup", "host": ["localhost"], "port": "8080", "path": ["auth", "signup"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nom\": \"TestUser\",\n  \"email\": \"{{email}}\",\n  \"motDePasse\": \"test1234\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Signup successful\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var res = pm.response.json();",
+              "    pm.environment.set(\"userId\", res.id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Login as random user",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "http://localhost:8080/auth/login", "host": ["localhost"], "port": "8080", "path": ["auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"motDePasse\": \"test1234\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"User login successful\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    var data = pm.response.json();",
+              "    pm.environment.set(\"userToken\", data.token);",
+              "    pm.environment.set(\"userId\", data.user.id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Login as Admin",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": { "raw": "http://localhost:8080/auth/login", "host": ["localhost"], "port": "8080", "path": ["auth", "login"] },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@co2.com\",\n  \"motDePasse\": \"admin123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Admin login successful\", function () {",
+              "    var data = pm.response.json();",
+              "    pm.environment.set(\"adminToken\", data.token);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Promote random user to Admin",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": {
+          "raw": "http://localhost:8080/users/{{userId}}/role?role=Admin",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["users", "{{userId}}", "role"],
+          "query": [{ "key": "role", "value": "Admin" }]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"User promoted to Admin\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Delete test user",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+        "url": { "raw": "http://localhost:8080/users/{{userId}}", "host": ["localhost"], "port": "8080", "path": ["users", "{{userId}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"User deleted\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "// 🧼 Clean up for future tests",
+              "pm.environment.unset(\"userId\");",
+              "pm.environment.unset(\"userToken\");",
+              "pm.environment.unset(\"adminToken\");",
+              "pm.environment.unset(\"email\");"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "email", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "userToken", "value": "" },
+    { "key": "adminToken", "value": "" }
+  ]
+}

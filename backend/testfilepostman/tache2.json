@@ -1,0 +1,249 @@
+{
+  "info": {
+    "name": "CO2 Transport Full Test Suite",
+    "_postman_id": "co2-transport-full-2025",
+    "description": "Tests for all /transports endpoints with admin authorization and emissions",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Login as Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/auth/login",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@co2.com\",\n  \"motDePasse\": \"admin123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Admin login successful\", function () {",
+              "  var json = pm.response.json();",
+              "  pm.response.to.have.status(200);",
+              "  pm.environment.set(\"adminToken\", json.token);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Get All Transports",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/transports",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "transports"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Transports list OK\", () => pm.response.to.have.status(200));",
+              "const data = pm.response.json();",
+              "pm.test(\"At least one transport\", () => pm.expect(data.length).to.be.greaterThan(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Search Emissions Marseille \u2192 Paris",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/transports/search?origine=Marseille&destination=Paris",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "transports",
+            "search?origine=Marseille&destination=Paris"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Emissions list OK\", () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test(\"List not empty\", () => pm.expect(json.length).to.be.greaterThan(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Add New Transport",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/transports",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "transports"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nom\": \"Navette Test\",\n  \"capacite\": 40,\n  \"consommationMoyenne\": 3.5,\n  \"typeTransport\": {\n    \"id\": 1\n  },\n  \"sourceEnergie\": {\n    \"id\": 1\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Transport created\", () => pm.response.to.have.status(200));",
+              "const res = pm.response.json();",
+              "pm.environment.set(\"createdTransportId\", res.id);",
+              "console.log(\"Created Transport ID:\", res.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Update Transport",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/transports/{{createdTransportId}}",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "transports",
+            "{{createdTransportId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nom\": \"Navette Test Modifi\\u00e9e\",\n  \"capacite\": 45,\n  \"consommationMoyenne\": 4.2,\n  \"typeTransport\": {\n    \"id\": 1\n  },\n  \"sourceEnergie\": {\n    \"id\": 1\n  }\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Transport updated\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Delete Transport",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/transports/{{createdTransportId}}",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8080",
+          "path": [
+            "transports",
+            "{{createdTransportId}}"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Transport deleted\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "createdTransportId",
+      "value": ""
+    }
+  ]
+}
