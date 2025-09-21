@@ -1,0 +1,22 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <rect width="240" height="240" fill="white"/>
+  <circle cx="120" cy="120" r="100" fill="#E0F7EC" />
+  
+  <!-- Eco Leaf -->
+  <path d="M140 80 C130 60, 100 60, 90 80 C80 100, 90 140, 120 150 C150 140, 160 100, 140 80 Z"
+        fill="#34D399" stroke="#059669" stroke-width="2"/>
+
+  <!-- Sun element -->
+  <circle cx="180" cy="50" r="18" fill="#FDE68A" stroke="#F59E0B" stroke-width="3" />
+  <line x1="180" y1="20" x2="180" y2="10" stroke="#F59E0B" stroke-width="2" />
+  <line x1="180" y1="80" x2="180" y2="90" stroke="#F59E0B" stroke-width="2" />
+  <line x1="150" y1="50" x2="140" y2="50" stroke="#F59E0B" stroke-width="2" />
+  <line x1="210" y1="50" x2="220" y2="50" stroke="#F59E0B" stroke-width="2" />
+  <line x1="160" y1="30" x2="153" y2="23" stroke="#F59E0B" stroke-width="2" />
+  <line x1="200" y1="30" x2="207" y2="23" stroke="#F59E0B" stroke-width="2" />
+  <line x1="160" y1="70" x2="153" y2="77" stroke="#F59E0B" stroke-width="2" />
+  <line x1="200" y1="70" x2="207" y2="77" stroke="#F59E0B" stroke-width="2" />
+
+  <!-- Optional Text Placeholder (not visible, for future) -->
+  <!-- <text x="120" y="220" text-anchor="middle" fill="#4B5563" font-size="14px">Commencez une recherche</text> -->
+</svg>
